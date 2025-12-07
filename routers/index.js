@@ -14,5 +14,5 @@ rootRouter.use('/orderdetails', orderdetailRouter);
 rootRouter.use('/chat', chatRouter);
 
 module.exports = {
-	rootRouter
+  rootRouter
 };

@@ -4,7 +4,7 @@ const { RecursiveCharacterTextSplitter } = require('@langchain/textsplitters');
 const { Document } = require('@langchain/core/documents');
 const { GoogleGenerativeAIEmbeddings } = require('@langchain/google-genai');
 const { SupabaseVectorStore } = require('@langchain/community/vectorstores/supabase');
-const { TaskType } = require("@google/generative-ai"); // Import trực tiếp từ SDK gốc
+const { TaskType } = require('@google/generative-ai');
 
 async function downloadMarkdown(bucket, filePath) {
   const { data, error } = await supabase.storage.from(bucket).download(filePath);
@@ -46,34 +46,33 @@ async function splitMarkdown(markdownText) {
 
 async function main() {
   try {
-    console.log("🚀 Bắt đầu nạp lại dữ liệu...");
+    console.log('Nạp lại dữ liệu');
 
-    // 1. CẤU HÌNH CHUẨN GOOGLE (Dùng Enum TaskType)
+    //CẤU HÌNH CHUẨN GOOGLE (Dùng Enum TaskType)
     const embeddings = new GoogleGenerativeAIEmbeddings({
       apiKey: process.env.GOOGLE_API_KEY,
-      model: "text-embedding-004", 
-      taskType: TaskType.RETRIEVAL_DOCUMENT, // <--- BẮT BUỘC DÙNG CÁI NÀY
-      title: "Badminton Guide", // Google yêu cầu title cho document
+      model: 'text-embedding-004',
+      taskType: TaskType.RETRIEVAL_DOCUMENT,
+      title: 'Badminton Guide'
     });
 
-    // 2. TẢI VÀ XỬ LÝ
-    console.log("📥 Đang tải file...");
+    //TẢI VÀ XỬ LÝ
+    console.log('Đang tải file');
     const markdown = await downloadMarkdown('rag-docs', 'guide.md');
     const docs = await splitMarkdown(markdown);
     console.log(`🧩 Tìm thấy ${docs.length} đoạn.`);
 
-    // 3. LƯU VECTOR
-    console.log("💾 Đang lưu...");
+    //LƯU VECTOR
+    console.log('Đang lưu');
     await SupabaseVectorStore.fromDocuments(docs, embeddings, {
       client: supabase,
       tableName: 'documents',
-      queryName: 'match_documents',
+      queryName: 'match_documents'
     });
 
-    console.log("🎉 XONG! Dữ liệu đã chuẩn hóa TaskType.");
-
+    console.log('Dữ liệu đã chuẩn hóa TaskType');
   } catch (err) {
-    console.error("❌ Lỗi:", err);
+    console.error('Lỗi:', err);
   }
 }
 

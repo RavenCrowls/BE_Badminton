@@ -3,7 +3,6 @@ const express = require('express');
 const path = require('path');
 const { sequelize } = require('./models');
 const { rootRouter } = require('./routers');
-const { supabase } = require('./supabase');
 const app = express();
 const cors = require('cors');
 app.use(cors());
@@ -17,18 +16,6 @@ app.use(express.static(publicPathDirectory));
 
 // cài đặt router
 app.use('/api/v1', rootRouter);
-
-// kết nối supabase (kiểm tra qua Storage buckets)
-app.get('/health/db', async (req, res) => {
-  try {
-    const { data, error } = await supabase.storage.listBuckets();
-    if (error) throw error;
-    res.json({ ok: true, db: true, buckets: Array.isArray(data) ? data.map((b) => b.name) : [] });
-  } catch (error) {
-    console.error('Supabase client failed:', error);
-    res.status(500).json({ ok: false, error: 'Supabase client failed' });
-  }
-});
 
 // lắng nghe sự kiện kết nối
 app.listen(3000, async () => {
