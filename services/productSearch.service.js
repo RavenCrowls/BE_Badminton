@@ -5,6 +5,11 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
   try {
     const { categoryId, languageCode, limit = 10 } = options;
 
+    if (!minPrice && !maxPrice) {
+      console.warn('[Service] Price range is not defined');
+      return [];
+    }
+
     const where = {
       price: {
         [Op.between]: [minPrice, maxPrice]
@@ -48,28 +53,45 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
       order: [['price', 'ASC']]
     });
 
-    return products.map((p) => {
-      const translation = p.Pro_translations?.[0];
-      return {
-        id: p.id,
-        name: translation?.name || p.name,
-        description: translation?.description || p.description,
-        price: p.price,
-        brand: p.brand,
-        quantity: p.quantity,
-        category: p.Category?.name || null,
-        imageUrl: p.Imagesproducts?.[0]?.url || null,
-        languageCode: translation?.languagecode || null
-      };
-    });
+    if (!products || products.length === 0) {
+      console.warn('[Service] No products found in price range');
+      return [];
+    }
+
+    return products
+      .map((p) => {
+        try {
+          const translation = p.Pro_translations?.[0];
+          return {
+            id: p.id,
+            name: translation?.name || p.name,
+            description: translation?.description || p.description,
+            price: p.price,
+            brand: p.brand,
+            quantity: p.quantity,
+            category: p.Category?.name || null,
+            imageUrl: p.Imagesproducts?.[0]?.url || null,
+            languageCode: translation?.languagecode || null
+          };
+        } catch (mapError) {
+          console.error('[Service] Error mapping product:', mapError.message);
+          return null;
+        }
+      })
+      .filter((p) => p !== null);
   } catch (error) {
-    console.error('Error in findProductsByPriceRange:', error);
-    throw error;
+    console.error('Error in findProductsByPriceRange:', error.message);
+    throw new Error(`Failed to find products by price range: ${error.message}`);
   }
 }
 
 async function getProductStockByNameOrId({ productName, productId, languageCode }) {
   try {
+    if (!productName && !productId) {
+      console.warn('[Service] Product name or ID is not provided');
+      return null;
+    }
+
     const where = {};
     const include = [
       {
@@ -110,30 +132,41 @@ async function getProductStockByNameOrId({ productName, productId, languageCode 
     });
 
     if (!product) {
+      console.warn('[Service] Product not found:', productName || productId);
       return null;
     }
 
-    const translation = languageCode
-      ? product.Pro_translations?.find((t) => t.languagecode === languageCode)
-      : product.Pro_translations?.[0];
+    try {
+      const translation = languageCode
+        ? product.Pro_translations?.find((t) => t.languagecode === languageCode)
+        : product.Pro_translations?.[0];
 
-    return {
-      id: product.id,
-      name: translation?.name || product.name,
-      brand: product.brand,
-      price: product.price,
-      quantity: product.quantity,
-      category: product.Category?.name || null,
-      stockStatus: product.quantity === 0 ? 'hết hàng' : product.quantity < 5 ? 'sắp hết hàng' : 'còn hàng'
-    };
+      return {
+        id: product.id,
+        name: translation?.name || product.name,
+        brand: product.brand,
+        price: product.price,
+        quantity: product.quantity,
+        category: product.Category?.name || null,
+        stockStatus: product.quantity === 0 ? 'hết hàng' : product.quantity < 5 ? 'sắp hết hàng' : 'còn hàng'
+      };
+    } catch (mapError) {
+      console.error('[Service] Error mapping product stock info:', mapError.message);
+      return null;
+    }
   } catch (error) {
-    console.error('Error in getProductStockByNameOrId:', error);
-    throw error;
+    console.error('Error in getProductStockByNameOrId:', error.message);
+    throw new Error(`Failed to get product stock: ${error.message}`);
   }
 }
 
 async function listRacketsForStyle(style, options = {}) {
   try {
+    if (!style) {
+      console.warn('[Service] Style is not provided');
+      return [];
+    }
+
     const { languageCode, limit = 10 } = options;
 
     const racketCategory = await Categories.findOne({
@@ -145,7 +178,7 @@ async function listRacketsForStyle(style, options = {}) {
     });
 
     if (!racketCategory) {
-      console.warn('Không tìm thấy category vợt');
+      console.warn('[Service] Racket category not found');
       return [];
     }
 
@@ -161,12 +194,14 @@ async function listRacketsForStyle(style, options = {}) {
 
     const keywords = styleKeywords[style.toLowerCase()] || [];
 
-    const nameConditions = keywords.map((kw) => ({
-      [Op.or]: [{ name: { [Op.like]: `%${kw}%` } }, { '$Pro_translations.name$': { [Op.like]: `%${kw}%` } }]
-    }));
+    if (keywords.length > 0) {
+      const nameConditions = keywords.map((kw) => ({
+        [Op.or]: [{ name: { [Op.like]: `%${kw}%` } }, { '$Pro_translations.name$': { [Op.like]: `%${kw}%` } }]
+      }));
 
-    if (nameConditions.length > 0) {
-      where[Op.or] = nameConditions;
+      if (nameConditions.length > 0) {
+        where[Op.or] = nameConditions;
+      }
     }
 
     const include = [
@@ -202,24 +237,36 @@ async function listRacketsForStyle(style, options = {}) {
       order: [['price', 'DESC']]
     });
 
-    return products.map((p) => {
-      const translation = languageCode ? p.Pro_translations?.find((t) => t.languagecode === languageCode) : p.Pro_translations?.[0];
+    if (!products || products.length === 0) {
+      console.warn('[Service] No rackets found for style:', style);
+      return [];
+    }
 
-      return {
-        id: p.id,
-        name: translation?.name || p.name,
-        description: translation?.description || p.description,
-        price: p.price,
-        brand: p.brand,
-        quantity: p.quantity,
-        category: p.Category?.name || null,
-        imageUrl: p.Imagesproducts?.[0]?.url || null,
-        style: style
-      };
-    });
+    return products
+      .map((p) => {
+        try {
+          const translation = languageCode ? p.Pro_translations?.find((t) => t.languagecode === languageCode) : p.Pro_translations?.[0];
+
+          return {
+            id: p.id,
+            name: translation?.name || p.name,
+            description: translation?.description || p.description,
+            price: p.price,
+            brand: p.brand,
+            quantity: p.quantity,
+            category: p.Category?.name || null,
+            imageUrl: p.Imagesproducts?.[0]?.url || null,
+            style: style
+          };
+        } catch (mapError) {
+          console.error('[Service] Error mapping racket:', mapError.message);
+          return null;
+        }
+      })
+      .filter((p) => p !== null);
   } catch (error) {
-    console.error('Error in listRacketsForStyle:', error);
-    throw error;
+    console.error('Error in listRacketsForStyle:', error.message);
+    throw new Error(`Failed to list rackets for style: ${error.message}`);
   }
 }
 
