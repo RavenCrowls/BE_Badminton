@@ -35,6 +35,7 @@
     "nodemailer": "^7.0.11",
     "postgres": "^3.4.7",
     "sequelize": "^6.37.7",
+    "socket.io": "^4.8.1",
     "vnpay": "^2.4.4"
   },
   "devDependencies": {
