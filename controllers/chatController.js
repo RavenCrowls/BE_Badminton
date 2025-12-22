@@ -152,20 +152,26 @@ async function handleChat(req, res) {
     //TÌM KIẾM GUIDE
     if (routing.route === 'guide_only' || routing.route === 'hybrid') {
       console.log('\n[RAG] Searching guide.md...');
-      const vectorStore = new SupabaseVectorStore(embeddings, {
-        client: supabase,
-        tableName: 'documents',
-        queryName: 'match_documents'
-      });
+      try {
+        const vectorStore = new SupabaseVectorStore(embeddings, {
+          client: supabase,
+          tableName: 'documents',
+          queryName: 'match_documents'
+        });
 
-      const docs = await vectorStore.similaritySearch(question, 5);
-      console.log(`[RAG] Found: ${docs.length} chunks from guide.md`);
+        const docs = await vectorStore.similaritySearch(question, 5);
+        console.log(`[RAG] Found: ${docs.length} chunks from guide.md`);
 
-      if (docs.length > 0) {
-        guide_context = docs.map((d) => d.pageContent).join('\n\n');
-        console.log('[RAG] First chunk preview:', docs[0].pageContent.substring(0, 100) + '...');
-      } else {
-        console.log('[RAG] No matches found in guide.md');
+        if (docs.length > 0) {
+          guide_context = docs.map((d) => d.pageContent).join('\n\n');
+          console.log('[RAG] First chunk preview:', docs[0].pageContent.substring(0, 100) + '...');
+        } else {
+          console.log('[RAG] No matches found in guide.md');
+        }
+      } catch (ragError) {
+        console.error('[RAG] Error searching vector store:', ragError.message);
+        console.warn('[RAG] Falling back to product_db only');
+        guide_context = '';
       }
     }
 
@@ -181,39 +187,54 @@ async function handleChat(req, res) {
         switch (routing.intent) {
           case 'price_range_query':
             if (routing.minPrice !== null || routing.maxPrice !== null) {
-              const min = routing.minPrice || 0;
-              const max = routing.maxPrice || 999999999;
-              console.log(`[DB] SCENARIO 1: Price Range Query (${min.toLocaleString()} - ${max.toLocaleString()}đ)`);
-              console.log(`[DB] Calling findProductsByPriceRange(${min}, ${max})`);
-              product_context = await findProductsByPriceRange(min, max, options);
-              console.log(`[DB] Found ${product_context.length} products in range`);
+              try {
+                const min = routing.minPrice || 0;
+                const max = routing.maxPrice || 999999999;
+                console.log(`[DB] SCENARIO 1: Price Range Query (${min.toLocaleString()} - ${max.toLocaleString()}đ)`);
+                console.log(`[DB] Calling findProductsByPriceRange(${min}, ${max})`);
+                product_context = await findProductsByPriceRange(min, max, options);
+                console.log(`[DB] Found ${product_context.length} products in range`);
+              } catch (priceError) {
+                console.error('[DB] Error in price range query:', priceError.message);
+                product_context = [];
+              }
             }
             break;
 
           case 'stock_query':
             if (routing.productName || routing.productId) {
-              console.log(`[DB] SCENARIO 2: Stock Query for "${routing.productName || routing.productId}"`);
-              console.log(`[DB] Calling getProductStockByNameOrId(${routing.productName || routing.productId})`);
-              const stockInfo = await getProductStockByNameOrId({
-                productName: routing.productName,
-                productId: routing.productId,
-                languageCode: routing.languageCode
-              });
-              if (stockInfo) {
-                product_context = [stockInfo];
-                console.log(`[DB] Found: ${stockInfo.name}, Stock: ${stockInfo.quantity} (${stockInfo.stockStatus})`);
-              } else {
-                console.log('[DB] Product not found');
+              try {
+                console.log(`[DB] SCENARIO 2: Stock Query for "${routing.productName || routing.productId}"`);
+                console.log(`[DB] Calling getProductStockByNameOrId(${routing.productName || routing.productId})`);
+                const stockInfo = await getProductStockByNameOrId({
+                  productName: routing.productName,
+                  productId: routing.productId,
+                  languageCode: routing.languageCode
+                });
+                if (stockInfo) {
+                  product_context = [stockInfo];
+                  console.log(`[DB] Found: ${stockInfo.name}, Stock: ${stockInfo.quantity} (${stockInfo.stockStatus})`);
+                } else {
+                  console.log('[DB] Product not found');
+                }
+              } catch (stockError) {
+                console.error('[DB] Error in stock query:', stockError.message);
+                product_context = [];
               }
             }
             break;
 
           case 'style_recommendation':
             if (routing.style) {
-              console.log(`[DB] SCENARIO 3: Style Recommendation for "${routing.style}"`);
-              console.log(`[DB] Calling listRacketsForStyle(${routing.style})`);
-              product_context = await listRacketsForStyle(routing.style, options);
-              console.log(`[DB] Found ${product_context.length} rackets for ${routing.style} style`);
+              try {
+                console.log(`[DB] SCENARIO 3: Style Recommendation for "${routing.style}"`);
+                console.log(`[DB] Calling listRacketsForStyle(${routing.style})`);
+                product_context = await listRacketsForStyle(routing.style, options);
+                console.log(`[DB] Found ${product_context.length} rackets for ${routing.style} style`);
+              } catch (styleError) {
+                console.error('[DB] Error in style recommendation query:', styleError.message);
+                product_context = [];
+              }
             }
             break;
 
@@ -221,7 +242,8 @@ async function handleChat(req, res) {
             console.log(`[DB] Intent '${routing.intent}' does not require DB query`);
         }
       } catch (dbError) {
-        console.error('[DB] Error querying database:', dbError);
+        console.error('[DB] Error in database query execution:', dbError.message);
+        product_context = [];
       }
     }
 
@@ -351,8 +373,15 @@ Bạn là trợ lý tư vấn thân thiện và chuyên nghiệp của Shop Cầ
       new StringOutputParser()
     ]);
 
-    const answer = await chain.invoke({ question });
-    console.log('\n[ANSWER] Generated:', answer.substring(0, 200) + '...');
+    let answer = '';
+    try {
+      answer = await chain.invoke({ question });
+      console.log('\n[ANSWER] Generated:', answer.substring(0, 200) + '...');
+    } catch (chainError) {
+      console.error('[ANSWER] Error generating response from chain:', chainError.message);
+      console.warn('[ANSWER] Using fallback response');
+      answer = 'Xin lỗi, hiện tại hệ thống gặp sự cố kỹ thuật. Vui lòng liên hệ shop để được hỗ trợ: Hotline 0909-xxx-xxx';
+    }
 
     //TẠO KẾT QUẢ VÀ LOGGING TÓM TẮT
     const executionSummary = {
