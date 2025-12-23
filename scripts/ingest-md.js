@@ -60,7 +60,7 @@ async function main() {
     console.log('Đang tải file');
     const markdown = await downloadMarkdown('rag-docs', 'guide.md');
     const docs = await splitMarkdown(markdown);
-    console.log(`🧩 Tìm thấy ${docs.length} đoạn.`);
+    console.log(`Tìm thấy ${docs.length} đoạn.`);
 
     //LƯU VECTOR
     console.log('Đang lưu');
