@@ -195,6 +195,28 @@ const forgotPassword = async (req, res) => {
   res.status(200).send('Password reset link sent to your email');
 };
 
+const getUsersByRoleId = async (req, res) => {
+  const { roleid } = req.params;
+  try {
+    const users = await Users.findAll({
+      where: { roleid: roleid },
+      include: [
+        {
+          model: Roles,
+          attributes: ['name', 'description']
+        },
+        {
+          model: Imagesuser,
+          attributes: ['url']
+        }
+      ]
+    });
+    res.status(200).send(users);
+  } catch (error) {
+    res.status(500).send(error);
+  }
+};
+
 module.exports = {
   createUsers,
   getAllUsers,
@@ -205,4 +227,5 @@ module.exports = {
   getDetailUsersByUsername,
   changePassword,
   forgotPassword
+  getUsersByRoleId,
 };
