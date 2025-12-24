@@ -276,6 +276,10 @@ const getTop5ProductsByMonth = async (req, res) => {
       attributes: ['id', 'price', 'brand', 'quantity'],
       include: [
         {
+          model: ImagesProducts,
+          attributes: ['id', 'url']
+        },
+        {
           model: Pro_translation,
           as: 'translations',
           attributes: ['languagecode', 'name', 'description'],
