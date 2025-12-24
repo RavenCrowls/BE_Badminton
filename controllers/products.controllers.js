@@ -1,5 +1,5 @@
 const { Op, fn, col, literal } = require('sequelize');
-const { Products, Imagesproduct, Categories, Orders, Ordersdetail, Pro_translation, sequelize } = require('../models');
+const { Products, ImagesProducts, Categories, Orders, Ordersdetail, Pro_translation, sequelize } = require('../models');
 const { isProductinFlashsale } = require('./flashsales.controllers');
 
 const createProducts = async (req, res) => {
@@ -50,7 +50,7 @@ const getAllProducts = async (req, res) => {
         attributes: ['name']
       },
       {
-        model: Imagesproduct,
+        model: ImagesProducts,
         attributes: ['url']
       }
     ];
@@ -117,7 +117,7 @@ const getDetailProducts = async (req, res) => {
         attributes: ['name']
       },
       {
-        model: Imagesproduct,
+        model: ImagesProducts,
         attributes: ['id', 'url']
       }
     ];
