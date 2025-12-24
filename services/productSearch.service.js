@@ -23,6 +23,7 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
     const include = [
       {
         model: Categories,
+        as: 'cate',
         attributes: ['name']
       },
       {
@@ -34,6 +35,7 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
     if (languageCode) {
       include.push({
         model: Pro_translation,
+        as: 'translations',
         attributes: ['name', 'languagecode', 'description'],
         where: { languagecode: languageCode },
         required: false
@@ -41,6 +43,7 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
     } else {
       include.push({
         model: Pro_translation,
+        as: 'translations',
         attributes: ['name', 'languagecode', 'description'],
         required: false
       });
@@ -61,7 +64,7 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
     return products
       .map((p) => {
         try {
-          const translation = p.Pro_translations?.[0];
+          const translation = p.translations?.[0];
           return {
             id: p.id,
             name: translation?.name || p.name,
@@ -69,7 +72,7 @@ async function findProductsByPriceRange(minPrice, maxPrice, options = {}) {
             price: p.price,
             brand: p.brand,
             quantity: p.quantity,
-            category: p.Category?.name || null,
+            category: p.cate?.name || null,
             imageUrl: p.Imagesproducts?.[0]?.url || null,
             languageCode: translation?.languagecode || null
           };
@@ -96,6 +99,7 @@ async function getProductStockByNameOrId({ productName, productId, languageCode 
     const include = [
       {
         model: Categories,
+        as: 'cate',
         attributes: ['name']
       }
     ];
@@ -110,6 +114,7 @@ async function getProductStockByNameOrId({ productName, productId, languageCode 
         }
         include.push({
           model: Pro_translation,
+          as: 'translations',
           attributes: ['name', 'languagecode', 'description'],
           where: transWhere,
           required: true
@@ -118,6 +123,7 @@ async function getProductStockByNameOrId({ productName, productId, languageCode 
         where.name = { [Op.like]: `%${productName}%` };
         include.push({
           model: Pro_translation,
+          as: 'translations',
           attributes: ['name', 'languagecode', 'description'],
           required: false
         });
@@ -137,9 +143,7 @@ async function getProductStockByNameOrId({ productName, productId, languageCode 
     }
 
     try {
-      const translation = languageCode
-        ? product.Pro_translations?.find((t) => t.languagecode === languageCode)
-        : product.Pro_translations?.[0];
+      const translation = languageCode ? product.translations?.find((t) => t.languagecode === languageCode) : product.translations?.[0];
 
       return {
         id: product.id,
@@ -147,7 +151,7 @@ async function getProductStockByNameOrId({ productName, productId, languageCode 
         brand: product.brand,
         price: product.price,
         quantity: product.quantity,
-        category: product.Category?.name || null,
+        category: product.cate?.name || null,
         stockStatus: product.quantity === 0 ? 'hết hàng' : product.quantity < 5 ? 'sắp hết hàng' : 'còn hàng'
       };
     } catch (mapError) {
@@ -207,6 +211,7 @@ async function listRacketsForStyle(style, options = {}) {
     const include = [
       {
         model: Categories,
+        as: 'cate',
         attributes: ['name']
       },
       {
@@ -218,6 +223,7 @@ async function listRacketsForStyle(style, options = {}) {
     if (languageCode) {
       include.push({
         model: Pro_translation,
+        as: 'translations',
         attributes: ['name', 'languagecode', 'description'],
         where: { languagecode: languageCode },
         required: false
@@ -225,6 +231,7 @@ async function listRacketsForStyle(style, options = {}) {
     } else {
       include.push({
         model: Pro_translation,
+        as: 'translations',
         attributes: ['name', 'languagecode', 'description'],
         required: false
       });
@@ -245,7 +252,7 @@ async function listRacketsForStyle(style, options = {}) {
     return products
       .map((p) => {
         try {
-          const translation = languageCode ? p.Pro_translations?.find((t) => t.languagecode === languageCode) : p.Pro_translations?.[0];
+          const translation = languageCode ? p.translations?.find((t) => t.languagecode === languageCode) : p.translations?.[0];
 
           return {
             id: p.id,
@@ -254,7 +261,7 @@ async function listRacketsForStyle(style, options = {}) {
             price: p.price,
             brand: p.brand,
             quantity: p.quantity,
-            category: p.Category?.name || null,
+            category: p.cate?.name || null,
             imageUrl: p.Imagesproducts?.[0]?.url || null,
             style: style
           };
