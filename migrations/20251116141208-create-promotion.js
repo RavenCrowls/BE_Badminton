@@ -15,10 +15,28 @@ module.exports = {
       description: {
         type: Sequelize.TEXT
       },
-      quantity: {
-        type: Sequelize.INTEGER
+      type: {
+        type: Sequelize.STRING
       },
       value: {
+        type: Sequelize.INTEGER
+      },
+      min_order_value: {
+        type: Sequelize.INTEGER
+      },
+      max_value: {
+        type: Sequelize.INTEGER
+      },
+      require_point: {
+        type: Sequelize.INTEGER
+      },
+      max_uses: {
+        type: Sequelize.INTEGER
+      },
+      used_count: {
+        type: Sequelize.INTEGER
+      },
+      userid: {
         type: Sequelize.INTEGER
       },
       start: {

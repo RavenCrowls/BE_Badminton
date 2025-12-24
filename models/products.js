@@ -10,7 +10,8 @@ module.exports = (sequelize, DataTypes) => {
     static associate({ Categories, ImagesProducts, Ordersdetail, Carts, GRNdetails, Reviews, Pro_translation }) {
       // define association here
       this.belongsTo(Categories, {
-        foreignKey: 'categoriesid'
+        foreignKey: 'categoriesid',
+        as: 'cate'
       });
       this.hasMany(ImagesProducts, {
         foreignKey: 'productid'
@@ -28,15 +29,18 @@ module.exports = (sequelize, DataTypes) => {
         foreignKey: 'productid'
       });
       this.hasMany(Pro_translation, {
-        foreignKey: 'productid'
+        foreignKey: 'productid',
+        as: 'translations'
+      });
+      this.hasMany(Flashsaledetails, {
+        foreignKey: "productid",
       });
     }
   }
   Products.init(
     {
-      name: DataTypes.STRING,
       categoriesid: DataTypes.INTEGER,
-      description: DataTypes.TEXT,
+
       price: DataTypes.INTEGER,
       brand: DataTypes.STRING,
       quantity: DataTypes.INTEGER

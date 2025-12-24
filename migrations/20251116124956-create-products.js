@@ -9,18 +9,12 @@ module.exports = {
         primaryKey: true,
         type: Sequelize.INTEGER
       },
-      name: {
-        type: Sequelize.STRING
-      },
       categoriesid: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Categories',
-          key: 'id'
-        },
-      },
-      description: {
-        type: Sequelize.TEXT
+        type: Sequelize.INTEGER
+        // references: {
+        //   model: 'Categories',
+        //   key: 'id'
+        // },
       },
       price: {
         type: Sequelize.INTEGER

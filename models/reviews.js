@@ -20,6 +20,7 @@ module.exports = (sequelize, DataTypes) => {
     userid: DataTypes.INTEGER,
     rating: DataTypes.INTEGER,
     content: DataTypes.TEXT,
+    toxicscore: DataTypes.FLOAT,
     productid: DataTypes.INTEGER,
     orderid: DataTypes.INTEGER,
     prereviewid: DataTypes.INTEGER

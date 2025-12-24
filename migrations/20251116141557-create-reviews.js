@@ -10,11 +10,11 @@ module.exports = {
         type: Sequelize.INTEGER
       },
       userid: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Users',
-          key: 'id'
-        }
+        type: Sequelize.INTEGER
+        // references: {
+        //   model: 'Users',
+        //   key: 'id'
+        // }
       },
       rating: {
         type: Sequelize.INTEGER
@@ -22,26 +22,32 @@ module.exports = {
       content: {
         type: Sequelize.TEXT
       },
+      toxicscore: {
+        type: Sequelize.FLOAT
+      },
+      status: {
+        type: Sequelize.STRING,
+      },
       productid: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Products',
-          key: 'id'
-        }
+        type: Sequelize.INTEGER
+        // references: {
+        //   model: 'Products',
+        //   key: 'id'
+        // }
       },
       orderid: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Orders',
-          key: 'id'
-        }
+        type: Sequelize.INTEGER
+        // references: {
+        //   model: 'Orders',
+        //   key: 'id'
+        // }
       },
       prereviewid: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Reviews',
-          key: 'id'
-        }
+        type: Sequelize.INTEGER
+        // references: {
+        //   model: 'Reviews',
+        //   key: 'id'
+        // }
       },
       createdAt: {
         allowNull: false,

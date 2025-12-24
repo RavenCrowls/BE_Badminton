@@ -30,12 +30,15 @@ module.exports = {
       phonenumber: {
         type: Sequelize.STRING
       },
+      loyaltypoint: {
+        type: Sequelize.INTEGER
+      },
       roleid: {
-        type: Sequelize.INTEGER,
-        references: {
-          model: 'Roles',
-          key: 'id'
-        },
+        type: Sequelize.INTEGER
+        // references: {
+        //   model: 'Roles',
+        //   key: 'id'
+        // },
       },
       createdAt: {
         allowNull: false,
