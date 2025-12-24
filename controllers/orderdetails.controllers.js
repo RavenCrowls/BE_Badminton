@@ -1,4 +1,4 @@
-const { Ordersdetail, Products, Pro_translation, Imagesproduct } = require('../models');
+const { Ordersdetail, Products, Pro_translation, ImagesProducts } = require('../models');
 
 const createOrderDetail = async (req, res) => {
   try {
@@ -32,7 +32,7 @@ const getAllOrderDetails = async (req, res) => {
               where: { languagecode: lang }
             },
             {
-              model: Imagesproduct,
+              model: ImagesProducts,
               attributes: ['url']
             }
           ]
@@ -41,6 +41,7 @@ const getAllOrderDetails = async (req, res) => {
     });
     res.status(200).send(orderDetails);
   } catch (error) {
+    console.log(error);
     res.status(500).send(error);
   }
 };
@@ -66,7 +67,7 @@ const getOrderDetailById = async (req, res) => {
               where: { languagecode: lang }
             },
             {
-              model: Imagesproduct,
+              model: ImagesProducts,
               attributes: ['url']
             }
           ]
