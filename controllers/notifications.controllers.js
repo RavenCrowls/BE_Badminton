@@ -1,45 +1,83 @@
-const { raw } = require("express");
-const { Notifications, Users, Promotions } = require("../models");
-const { translate } = require("../utils/translator");
-const { Op } = require("sequelize");
+const { raw } = require('express');
+const { Notifications, Users, Promotions, Reviews, Products, Pro_translation } = require('../models');
+const { translate } = require('../utils/translator');
+const { Op } = require('sequelize');
 
 const getAllNotifications = async (req, res) => {
   try {
     const { lang, userid, isread, type } = req.query;
+    const locale = lang || 'vi';
     const where = {};
 
     const user = await Users.findOne({ where: { id: userid } });
 
     if (userid) where.userid = userid;
-    if (isread !== undefined) where.isread = isread === "true";
+    if (isread !== undefined) where.isread = isread === 'true';
     if (type) where.type = type;
 
     const notificationsList = await Notifications.findAll({
       where,
-      order: [["createdAt", "DESC"]], // mới nhất trước,
-      raw: true,
+      order: [['createdAt', 'DESC']], // mới nhất trước,
+      raw: true
     });
+
+    // Prefetch review info to fill template params (e.g., product_name)
+    const reviewIds = notificationsList.filter((noti) => noti.type === 'review' && noti.relatedid).map((noti) => noti.relatedid);
+
+    const reviewMeta = {};
+    if (reviewIds.length) {
+      const reviews = await Reviews.findAll({
+        where: { id: reviewIds },
+        include: [
+          {
+            model: Products,
+            attributes: ['id'],
+            include: [
+              {
+                model: Pro_translation,
+                as: 'translations',
+                attributes: ['name', 'languagecode'],
+                where: { languagecode: locale },
+                required: false
+              }
+            ]
+          }
+        ]
+      });
+      reviews.forEach((r) => {
+        const translations = r.Product?.translations || [];
+        const matched = translations.find((t) => t.languagecode === locale) || translations[0];
+        reviewMeta[r.id] = {
+          product_name: matched ? matched.name : undefined
+        };
+      });
+    }
 
     const translatedNoti = notificationsList.map((noti) => {
       // Parse relatedid từ JSON string thành object
-      let params = { user_name: user.name };
+      let params = { user_name: user ? user.name : undefined };
 
       if (noti.relatedid) {
         try {
-          const relatedData =
-            typeof noti.relatedid === "string"
-              ? JSON.parse(noti.relatedid)
-              : noti.relatedid;
+          const relatedData = typeof noti.relatedid === 'string' ? JSON.parse(noti.relatedid) : noti.relatedid;
 
           // Merge relatedData vào params (không ghi đè)
           params = { ...params, ...relatedData };
         } catch (e) {
-          console.error("Parse relatedid error:", e);
+          console.error('Parse relatedid error:', e);
         }
       }
 
+      // Bổ sung tham số cho các template cần order_id hoặc product_name
+      if (noti.type === 'order' && noti.relatedid) {
+        params = { order_id: noti.relatedid, ...params };
+      }
+      if (noti.type === 'review' && noti.relatedid && reviewMeta[noti.relatedid]) {
+        params = { ...params, ...reviewMeta[noti.relatedid] };
+      }
+
       // Dịch message với params
-      const message = translate(lang || "vi", noti.messagekey, params);
+      const message = translate(locale, noti.messagekey, params);
 
       // Trả về object đầy đủ
       return {
@@ -51,7 +89,7 @@ const getAllNotifications = async (req, res) => {
         relatedid: noti.relatedid, // Giữ nguyên JSON string
         createdAt: noti.createdAt,
         updatedAt: noti.updatedAt,
-        message: message, // Message đã được dịch
+        message: message // Message đã được dịch
       };
     });
     res.status(200).send(translatedNoti);
@@ -64,10 +102,10 @@ const getDetailNotification = async (req, res) => {
   const { id } = req.params;
   try {
     const notification = await Notifications.findOne({
-      where: { id },
+      where: { id }
     });
     if (!notification) {
-      return res.status(404).send({ message: "Notification not found" });
+      return res.status(404).send({ message: 'Notification not found' });
     }
     res.status(200).send(notification);
   } catch (error) {
@@ -79,10 +117,10 @@ const markAsRead = async (req, res) => {
   const { id } = req.params;
   try {
     const notification = await Notifications.findOne({
-      where: { id },
+      where: { id }
     });
     if (!notification) {
-      return res.status(404).send({ message: "Notification not found" });
+      return res.status(404).send({ message: 'Notification not found' });
     }
     notification.isread = true;
     await notification.save();
@@ -100,11 +138,11 @@ const markAllAsRead = async (req, res) => {
       {
         where: {
           userid,
-          isread: false,
-        },
+          isread: false
+        }
       }
     );
-    res.status(200).send({ message: "All notifications marked as read" });
+    res.status(200).send({ message: 'All notifications marked as read' });
   } catch (error) {
     res.status(500).send(error);
   }
@@ -114,13 +152,13 @@ const deleteNotification = async (req, res) => {
   const { id } = req.params;
   try {
     const notification = await Notifications.findOne({
-      where: { id },
+      where: { id }
     });
     if (!notification) {
-      return res.status(404).send({ message: "Notification not found" });
+      return res.status(404).send({ message: 'Notification not found' });
     }
     await notification.destroy();
-    res.status(200).send({ message: "Notification deleted successfully" });
+    res.status(200).send({ message: 'Notification deleted successfully' });
   } catch (error) {
     res.status(500).send(error);
   }
@@ -132,8 +170,8 @@ const getUnreadCount = async (req, res) => {
     const count = await Notifications.count({
       where: {
         userid,
-        isread: false,
-      },
+        isread: false
+      }
     });
     res.status(200).send({ unreadCount: count });
   } catch (error) {
@@ -144,44 +182,40 @@ const getUnreadCount = async (req, res) => {
 const sendPromotionNoti = async (req, res) => {
   const { userid, promotionid } = req.body;
   const promotion = await Promotions.findOne({
-    where: { id: promotionid },
+    where: { id: promotionid }
   });
   try {
     if (promotion.userid && promotion.userid == userid) {
       const noti = await Notifications.create({
         userid,
-        type: "promotion",
-        messagekey: "promotion.new",
-        relatedid: promotionid,
+        type: 'promotion',
+        messagekey: 'promotion.new',
+        relatedid: promotionid
       });
-      const message = translate("vi", noti.messagekey, {
-        promotion_code: promotion.code,
+      const message = translate('vi', noti.messagekey, {
+        promotion_code: promotion.code
       });
       return res.status(200).send({ ...noti.dataValues, message });
     } else if (promotion.require_point > 0) {
       const listusers = await Users.findAll({
         where: {
           point: {
-            [Op.gte]: promotion.require_point,
-          },
-        },
+            [Op.gte]: promotion.require_point
+          }
+        }
       });
       for (const user of listusers) {
         const noti = await Notifications.create({
           userid: user.id,
-          type: "promotion",
-          messagekey: "promotion.new",
-          relatedid: promotionid,
+          type: 'promotion',
+          messagekey: 'promotion.new',
+          relatedid: promotionid
         });
       }
-      return res
-        .status(200)
-        .send({ message: "Promotion notifications sent to eligible users" });
+      return res.status(200).send({ message: 'Promotion notifications sent to eligible users' });
     }
   } catch (error) {
-    return res
-      .status(500)
-      .send({ message: "Error sending promotion notification" });
+    return res.status(500).send({ message: 'Error sending promotion notification' });
   }
 };
 
@@ -192,5 +226,5 @@ module.exports = {
   markAllAsRead,
   deleteNotification,
   getUnreadCount,
-  sendPromotionNoti,
+  sendPromotionNoti
 };
