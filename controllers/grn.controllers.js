@@ -1,19 +1,19 @@
-const { Grns } = require('../models');
+const { GRN } = require('../models');
 const { Op } = require('sequelize');
 
 const createGRN = async (req, res) => {
   try {
     const { date, totalprice, userid } = req.body;
-    const newGRN = await Grns.create({ date, totalprice, userid });
+    const newGRN = await GRN.create({ date, totalprice, userid });
     res.status(201).send(newGRN);
   } catch (error) {
     res.status(500).send(error);
   }
 };
 
-const getAllGRNs = async (_req, res) => {
+const getAllGRNs = async (req, res) => {
   try {
-    const grns = await Grns.findAll();
+    const grns = await GRN.findAll();
     res.status(200).send(grns);
   } catch (error) {
     res.status(500).send(error);
@@ -23,7 +23,9 @@ const getAllGRNs = async (_req, res) => {
 const getGRNById = async (req, res) => {
   const { id } = req.params;
   try {
-    const detailGRNs = await Grns.findOne({ where: { id } });
+    const detailGRNs = await GRN.findOne({
+      where: { id }
+    });
     res.status(200).send(detailGRNs);
   } catch (error) {
     res.status(500).send(error);
@@ -34,8 +36,9 @@ const updateGRN = async (req, res) => {
   const { id } = req.params;
   const { date, totalprice, userid } = req.body;
   try {
-    const detailGRNs = await Grns.findOne({ where: { id } });
-    if (!detailGRNs) return res.status(404).send('Not found');
+    const detailGRNs = await GRN.findOne({
+      where: { id }
+    });
     detailGRNs.date = date;
     detailGRNs.totalprice = totalprice;
     detailGRNs.userid = userid;
@@ -49,8 +52,9 @@ const updateGRN = async (req, res) => {
 const deleteGRN = async (req, res) => {
   const { id } = req.params;
   try {
-    const detailGRNs = await Grns.findOne({ where: { id } });
-    if (!detailGRNs) return res.status(404).send('Not found');
+    const detailGRNs = await GRN.findOne({
+      where: { id }
+    });
     await detailGRNs.destroy();
     res.status(200).send('Deleted successfully');
   } catch (error) {
@@ -59,9 +63,9 @@ const deleteGRN = async (req, res) => {
 };
 
 const getTotalGRNAmount = async (req, res) => {
-  const { from, to } = req.query;
+  const { from, to } = req.query; // from và to dạng yyyy-mm-dd
   try {
-    const total = await Grns.sum('totalprice', {
+    const total = await GRN.sum('totalprice', {
       where: {
         createdAt: {
           [Op.gte]: new Date(from),

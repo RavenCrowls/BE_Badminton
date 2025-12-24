@@ -1,26 +1,29 @@
 'use strict';
 const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class GrnDetails extends Model {
+  class GRNdetails extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate({ Grns, Products }) {
+    static associate({ GRN, Products }) {
       // define association here
-      this.belongsTo(Grns, { foreignKey: 'grnid' });
+      this.belongsTo(GRN, { foreignKey: 'grnid' });
       this.belongsTo(Products, { foreignKey: 'productid' });
     }
   }
-  GrnDetails.init({
-    grnid: DataTypes.INTEGER,
-    productid: DataTypes.INTEGER,
-    price: DataTypes.INTEGER,
-    quantity: DataTypes.INTEGER
-  }, {
-    sequelize,
-    modelName: 'GrnDetails',
-  });
-  return GrnDetails;
+  GRNdetails.init(
+    {
+      grnid: DataTypes.INTEGER,
+      productid: DataTypes.INTEGER,
+      price: DataTypes.INTEGER,
+      quantity: DataTypes.INTEGER
+    },
+    {
+      sequelize,
+      modelName: 'GRNdetails'
+    }
+  );
+  return GRNdetails;
 };

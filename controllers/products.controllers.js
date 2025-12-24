@@ -1,5 +1,6 @@
 const { Op, fn, col, literal } = require('sequelize');
-const { Products, Imagesproduct, Categories, Orders, Ordersdetail, Pro_translation } = require('../models');
+const { Products, Imagesproduct, Categories, Orders, Ordersdetail, Pro_translation, sequelize } = require('../models');
+const { isProductinFlashsale } = require('./flashsales.controllers');
 
 const createProducts = async (req, res) => {
   const { categoriesid, price, brand, quantity, languagecode, name, description } = req.body;
@@ -45,6 +46,7 @@ const getAllProducts = async (req, res) => {
     const include = [
       {
         model: Categories,
+        as: 'cate',
         attributes: ['name']
       },
       {
@@ -62,6 +64,7 @@ const getAllProducts = async (req, res) => {
 
       include.push({
         model: Pro_translation,
+        as: 'translations',
         attributes: ['name', 'languagecode', 'description'],
         where: transWhere,
         required: true // chỉ lấy sản phẩm có bản dịch đúng languagecode
@@ -76,7 +79,28 @@ const getAllProducts = async (req, res) => {
       include
     });
 
-    res.status(200).send(productslist);
+    const enriched = await Promise.all(
+      productslist.map(async (product) => {
+        const json = product.toJSON();
+        const fsd = await isProductinFlashsale(product.id);
+        if (fsd) {
+          const basePrice = product.price;
+          const salePrice = fsd.type === 0 ? Math.max(0, basePrice - (basePrice * fsd.value) / 100) : Math.max(0, basePrice - fsd.value);
+          json.flashsale = {
+            id: fsd.id,
+            flashsaleid: fsd.flashsaleid,
+            type: fsd.type,
+            value: fsd.value,
+            sale_price: salePrice
+          };
+        } else {
+          json.flashsale = null;
+        }
+        return json;
+      })
+    );
+
+    res.status(200).send(enriched);
   } catch (error) {
     res.status(500).send(error);
   }
@@ -89,6 +113,7 @@ const getDetailProducts = async (req, res) => {
     const include = [
       {
         model: Categories,
+        as: 'cate',
         attributes: ['name']
       },
       {
@@ -101,6 +126,7 @@ const getDetailProducts = async (req, res) => {
     if (languagecode) {
       include.push({
         model: Pro_translation,
+        as: 'translations',
         attributes: ['name', 'languagecode', 'description'],
         where: { languagecode },
         required: false // Left join (nghĩa là vẫn lấy product nếu không có bản dịch)
@@ -114,7 +140,22 @@ const getDetailProducts = async (req, res) => {
     if (!detailProducts) {
       return res.status(404).send({ message: 'Product not found' });
     }
-    res.status(200).send(detailProducts);
+    const fsd = await isProductinFlashsale(detailProducts.id);
+    const json = detailProducts.toJSON();
+    if (fsd) {
+      const basePrice = detailProducts.price;
+      const salePrice = fsd.type === 0 ? Math.max(0, basePrice - (basePrice * fsd.value) / 100) : Math.max(0, basePrice - fsd.value);
+      json.flashsale = {
+        id: fsd.id,
+        flashsaleid: fsd.flashsaleid,
+        type: fsd.type,
+        value: fsd.value,
+        sale_price: salePrice
+      };
+    } else {
+      json.flashsale = null;
+    }
+    res.status(200).send(json);
   } catch (error) {
     res.status(500).send(error);
   }
@@ -199,12 +240,13 @@ const deleteProducts = async (req, res) => {
 };
 
 const getTop5ProductsByMonth = async (req, res) => {
-  const { month, year } = req.query;
+  const { month, year, lang } = req.query;
   try {
     const startDate = new Date(year, month - 1, 1);
     const endDate = new Date(year, month, 1);
 
-    const topProducts = await Ordersdetail.findAll({
+    // Step 1: Get top 5 products by sales
+    const topProductIds = await Ordersdetail.findAll({
       attributes: ['productid', [fn('SUM', col('Ordersdetail.quantity')), 'totalSold']],
       include: [
         {
@@ -215,20 +257,44 @@ const getTop5ProductsByMonth = async (req, res) => {
               [Op.gte]: startDate,
               [Op.lt]: endDate
             },
-            status: 1 // chỉ tính đơn đã hoàn thành (nếu có trường status)
+            status: 1
           }
-        },
-        {
-          model: Products,
-          attributes: ['id', 'name', 'price']
         }
       ],
-      group: ['productid', 'Product.id'],
+      group: ['productid'],
       order: [[literal('totalSold'), 'DESC']],
-      limit: 5
+      limit: 5,
+      raw: true,
+      subQuery: false
     });
 
-    res.status(200).send(topProducts);
+    // Step 2: Extract product IDs and get full product details with translations
+    const productIds = topProductIds.map((item) => item.productid);
+
+    const topProducts = await Products.findAll({
+      where: { id: { [Op.in]: productIds } },
+      attributes: ['id', 'price', 'brand', 'quantity'],
+      include: [
+        {
+          model: Pro_translation,
+          as: 'translations',
+          attributes: ['languagecode', 'name', 'description'],
+          where: lang ? { languagecode: lang } : undefined,
+          required: false
+        }
+      ]
+    });
+
+    // Step 3: Merge totalSold back into products
+    const result = topProducts.map((product) => {
+      const sales = topProductIds.find((item) => item.productid === product.id);
+      return {
+        ...product.toJSON(),
+        totalSold: sales ? sales.totalSold : 0
+      };
+    });
+
+    res.status(200).send(result);
   } catch (error) {
     res.status(500).send(error);
   }

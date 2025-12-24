@@ -16,6 +16,8 @@ const paymentRouter = require('./payment.routers');
 const { notificationsRouter } = require('./notifications.router');
 const { proTranslationRouter } = require('./protranslation.routers');
 const { chatRouter } = require('./chatRouter');
+const { flashsalesRouter } = require('./flashsales.routers');
+const { flashsaledetailsRouter } = require('./flashsaledetails.routers');
 
 const rootRouter = express.Router();
 
