@@ -226,6 +226,6 @@ module.exports = {
   login,
   getDetailUsersByUsername,
   changePassword,
-  forgotPassword
-  getUsersByRoleId,
+  forgotPassword,
+  getUsersByRoleId
 };
