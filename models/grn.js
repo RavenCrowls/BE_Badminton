@@ -1,19 +1,23 @@
 'use strict';
 const { Model } = require('sequelize');
 module.exports = (sequelize, DataTypes) => {
-  class Grns extends Model {
+  class GRN extends Model {
     /**
      * Helper method for defining associations.
      * This method is not a part of Sequelize lifecycle.
      * The `models/index` file will call this method automatically.
      */
-    static associate({ Users, GrnDetails }) {
+    static associate({ GRNdetails, Users }) {
       // define association here
-      this.belongsTo(Users, { foreignKey: 'userid' });
-      this.hasMany(GrnDetails, { foreignKey: 'grnid' });
+      this.hasMany(GRNdetails, {
+        foreignKey: 'grnid'
+      });
+      this.belongsTo(Users, {
+        foreignKey: 'userid'
+      });
     }
   }
-  Grns.init(
+  GRN.init(
     {
       date: DataTypes.DATE,
       totalprice: DataTypes.INTEGER,
@@ -21,8 +25,8 @@ module.exports = (sequelize, DataTypes) => {
     },
     {
       sequelize,
-      modelName: 'Grns'
+      modelName: 'GRN'
     }
   );
-  return Grns;
+  return GRN;
 };
