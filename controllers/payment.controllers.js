@@ -92,7 +92,7 @@ const checkPaymentVNPAY = async (req, res) => {
         relatedid: orderid
       });
 
-      return res.status(200).json({ paymentSuccessful: true });
+      return res.redirect(`http://localhost:3030/paymentsuccess?orderId=${orderid}`);
     } else {
       await createNotification({
         userid: order.userid,
@@ -100,7 +100,7 @@ const checkPaymentVNPAY = async (req, res) => {
         messagekey: 'order.payment_failed',
         relatedid: orderid
       });
-      return res.status(200).json({ paymentSuccessful: false });
+      return res.redirect(`http://localhost:3030/paymentfailed?orderId=${orderid}`);
     }
   } catch (err) {
     console.error(err);
@@ -130,7 +130,7 @@ const checkPaymentPaypal = async (req, res) => {
         relatedid: orderid
       });
 
-      return res.status(200).json({ paymentSuccessful: true });
+      return res.redirect(`http://localhost:3030/paymentsuccess?orderId=${orderid}`);
     } else {
       await createNotification({
         userid: userid,
@@ -138,7 +138,7 @@ const checkPaymentPaypal = async (req, res) => {
         messagekey: 'order.payment_failed',
         relatedid: orderid
       });
-      return res.status(200).json({ paymentSuccessful: false });
+      return res.redirect(`http://localhost:3030/paymentfailed?orderId=${orderid}`);
     }
   } catch (error) {
     console.error(error);

@@ -16,17 +16,21 @@ module.exports = (sequelize, DataTypes) => {
       this.hasMany(Reviews, { as: 'replies', foreignKey: 'prereviewid' });
     }
   }
-  Reviews.init({
-    userid: DataTypes.INTEGER,
-    rating: DataTypes.INTEGER,
-    content: DataTypes.TEXT,
-    toxicscore: DataTypes.FLOAT,
-    productid: DataTypes.INTEGER,
-    orderid: DataTypes.INTEGER,
-    prereviewid: DataTypes.INTEGER
-  }, {
-    sequelize,
-    modelName: 'Reviews',
-  });
+  Reviews.init(
+    {
+      userid: DataTypes.INTEGER,
+      rating: DataTypes.INTEGER,
+      content: DataTypes.TEXT,
+      toxicscore: DataTypes.FLOAT,
+      status: DataTypes.STRING,
+      productid: DataTypes.INTEGER,
+      orderid: DataTypes.INTEGER,
+      prereviewid: DataTypes.INTEGER
+    },
+    {
+      sequelize,
+      modelName: 'Reviews'
+    }
+  );
   return Reviews;
 };

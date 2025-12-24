@@ -1,21 +1,8 @@
-const { Promotions, Users } = require("../models");
+const { Promotions, Users } = require('../models');
 
 const createPromotions = async (req, res) => {
   try {
-    const {
-      code,
-      description,
-      type,
-      value,
-      min_order_value,
-      max_value,
-      require_point,
-      max_uses,
-      userid,
-      start,
-      end,
-      status,
-    } = req.body;
+    const { code, description, type, value, min_order_value, max_value, require_point, max_uses, userid, start, end, status } = req.body;
     const newPromotion = await Promotions.create({
       code,
       description,
@@ -29,7 +16,7 @@ const createPromotions = async (req, res) => {
       userid,
       start,
       end,
-      status,
+      status
     });
     res.status(201).send(newPromotion);
   } catch (error) {
@@ -57,10 +44,10 @@ const getDetailPromotions = async (req, res) => {
   const { id } = req.params;
   try {
     const detailPromotion = await Promotions.findOne({
-      where: { id },
+      where: { id }
     });
     if (!detailPromotion) {
-      return res.status(404).send({ message: "Promotion not found" });
+      return res.status(404).send({ message: 'Promotion not found' });
     }
     res.status(200).send(detailPromotion);
   } catch (error) {
@@ -72,10 +59,10 @@ const getDetailPromotionsByCode = async (req, res) => {
   const { code } = req.params;
   try {
     const detailPromotion = await Promotions.findOne({
-      where: { code },
+      where: { code }
     });
     if (!detailPromotion) {
-      return res.status(404).send({ message: "Promotion not found" });
+      return res.status(404).send({ message: 'Promotion not found' });
     }
     res.status(200).send(detailPromotion);
   } catch (error) {
@@ -85,38 +72,23 @@ const getDetailPromotionsByCode = async (req, res) => {
 
 const updatePromotions = async (req, res) => {
   const { id } = req.params;
-  const {
-    code,
-    description,
-    type,
-    value,
-    min_order_value,
-    max_value,
-    require_point,
-    max_uses,
-    used_count,
-    userid,
-    start,
-    end,
-    status,
-  } = req.body;
+  const { code, description, type, value, min_order_value, max_value, require_point, max_uses, used_count, userid, start, end, status } =
+    req.body;
   try {
     const detailPromotion = await Promotions.findOne({
-      where: { id },
+      where: { id }
     });
     if (!detailPromotion) {
-      return res.status(404).send({ message: "Promotion not found" });
+      return res.status(404).send({ message: 'Promotion not found' });
     }
 
     if (code !== undefined) detailPromotion.code = code;
     if (description !== undefined) detailPromotion.description = description;
     if (type !== undefined) detailPromotion.type = type;
     if (value !== undefined) detailPromotion.value = value;
-    if (min_order_value !== undefined)
-      detailPromotion.min_order_value = min_order_value;
+    if (min_order_value !== undefined) detailPromotion.min_order_value = min_order_value;
     if (max_value !== undefined) detailPromotion.max_value = max_value;
-    if (require_point !== undefined)
-      detailPromotion.require_point = require_point;
+    if (require_point !== undefined) detailPromotion.require_point = require_point;
     if (max_uses !== undefined) detailPromotion.max_uses = max_uses;
     if (used_count !== undefined) detailPromotion.used_count = used_count;
     if (userid !== undefined) detailPromotion.userid = userid;
@@ -135,13 +107,13 @@ const deletePromotions = async (req, res) => {
   const { id } = req.params;
   try {
     const detailPromotion = await Promotions.findOne({
-      where: { id },
+      where: { id }
     });
     if (!detailPromotion) {
-      return res.status(404).send({ message: "Promotion not found" });
+      return res.status(404).send({ message: 'Promotion not found' });
     }
     await detailPromotion.destroy();
-    res.status(200).send({ message: "Promotion deleted successfully" });
+    res.status(200).send({ message: 'Promotion deleted successfully' });
   } catch (error) {
     res.status(500).send(error);
   }
@@ -172,9 +144,9 @@ const calculatePromotionValue = (promotion, orderTotal, userid) => {
   if (promotion.used_count >= promotion.max_uses) {
     return 0;
   }
-  if (promotion.type === "percent") {
+  if (promotion.type === 0) {
     discount = (orderTotal * promotion.value) / 100;
-  } else if (promotion.type === "fixed") {
+  } else if (promotion.type === 1) {
     discount = promotion.value;
   }
 
@@ -182,7 +154,7 @@ const calculatePromotionValue = (promotion, orderTotal, userid) => {
     discount = promotion.max_value;
   }
 
-  console.log("Calculated discount:", discount);
+  console.log('Calculated discount:', discount);
 
   return discount;
 };
@@ -192,7 +164,7 @@ const suggestedPromotions = async (req, res) => {
     const { orderTotal, userid } = req.query;
     if (!orderTotal || !userid) {
       return res.status(400).json({
-        error: "orderTotal và userid là bắt buộc",
+        error: 'orderTotal và userid là bắt buộc'
       });
     }
 
@@ -201,20 +173,16 @@ const suggestedPromotions = async (req, res) => {
     // Lấy tất cả promotion đang active
     const allPromotions = await Promotions.findAll({
       where: { status: 1 },
-      raw: true,
+      raw: true
     });
 
     // Tính giá trị giảm giá cho từng promotion
     const promotionsWithDiscount = await Promise.all(
       allPromotions.map(async (promotion) => {
-        const discount = await calculatePromotionValue(
-          promotion,
-          orderValue,
-          userid
-        );
+        const discount = await calculatePromotionValue(promotion, orderValue, userid);
         return {
           ...promotion,
-          discountAmount: discount,
+          discountAmount: discount
         };
       })
     );
@@ -236,5 +204,5 @@ module.exports = {
   deletePromotions,
   getDetailPromotionsByCode,
   calculatePromotionValue,
-  suggestedPromotions,
+  suggestedPromotions
 };
