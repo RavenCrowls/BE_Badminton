@@ -1,5 +1,5 @@
-const { Imagesuser } = require("../models");
-const cloudinary = require("cloudinary").v2;
+const { ImagesUsers } = require('../models');
+const cloudinary = require('cloudinary').v2;
 
 const createImageUser = async (req, res) => {
   try {
@@ -7,9 +7,9 @@ const createImageUser = async (req, res) => {
     const url = req.file.path;
     console.log(req.file);
 
-    const newImageUser = await Imagesuser.create({
+    const newImageUser = await ImagesUsers.create({
       userid,
-      url,
+      url
     });
 
     res.status(201).json(newImageUser);
@@ -23,19 +23,19 @@ const changeImageUser = async (req, res) => {
     const { userid } = req.params;
     const url = req.file.path;
 
-    const imageUser = await Imagesuser.findOne({
-      where: { userid: userid },
+    const imageUser = await ImagesUsers.findOne({
+      where: { userid: userid }
     });
 
     if (!imageUser) {
-      return res.status(404).send({ message: "Image not found" });
+      return res.status(404).send({ message: 'Image not found' });
     }
 
     // Lấy public_id đúng từ url
-    const uploadIndex = imageUser.url.indexOf("/upload/");
+    const uploadIndex = imageUser.url.indexOf('/upload/');
     let publicId = imageUser.url.substring(uploadIndex + 8);
-    publicId = publicId.replace(/^v\d+\//, "");
-    publicId = publicId.replace(/\.[^/.]+$/, "");
+    publicId = publicId.replace(/^v\d+\//, '');
+    publicId = publicId.replace(/\.[^/.]+$/, '');
 
     // Xóa ảnh cũ trên Cloudinary
     await cloudinary.uploader.destroy(publicId);
@@ -52,5 +52,5 @@ const changeImageUser = async (req, res) => {
 
 module.exports = {
   createImageUser,
-  changeImageUser,
+  changeImageUser
 };
