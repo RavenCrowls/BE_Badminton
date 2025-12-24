@@ -1,4 +1,4 @@
-const { Users, Roles, Imagesuser } = require('../models');
+const { Users, Roles, ImagesUsers } = require('../models');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const { sendEmail } = require('../services/emailservice');
@@ -56,7 +56,7 @@ const getAllUsers = async (req, res) => {
           attributes: ['name', 'description']
         },
         {
-          model: Imagesuser,
+          model: ImagesUsers,
           attributes: ['url']
         }
       ]
@@ -78,7 +78,7 @@ const getDetailUsers = async (req, res) => {
           attributes: ['name', 'description']
         },
         {
-          model: Imagesuser,
+          model: ImagesUsers,
           attributes: ['url']
         }
       ]
@@ -100,7 +100,7 @@ const getDetailUsersByUsername = async (req, res) => {
           attributes: ['name', 'description']
         },
         {
-          model: Imagesuser,
+          model: ImagesUsers,
           attributes: ['url']
         }
       ]
@@ -206,7 +206,7 @@ const getUsersByRoleId = async (req, res) => {
           attributes: ['name', 'description']
         },
         {
-          model: Imagesuser,
+          model: ImagesUsers,
           attributes: ['url']
         }
       ]
