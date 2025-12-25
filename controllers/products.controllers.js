@@ -4,9 +4,8 @@ const { isProductinFlashsale } = require('./flashsales.controllers');
 
 const createProducts = async (req, res) => {
   const { categoriesid, price, brand, quantity, languagecode, name, description } = req.body;
-  const t = await sequelize.transaction();
   try {
-    const product = await Products.create({ categoriesid, price, brand, quantity }, { transaction: t });
+    const product = await Products.create({ categoriesid, price, brand, quantity });
 
     if (languagecode && name) {
       await Pro_translation.create(
@@ -16,24 +15,22 @@ const createProducts = async (req, res) => {
           name,
           description: description || null
         },
-        { transaction: t }
       );
     }
 
-    await t.commit();
     const created = await Products.findOne({
       where: { id: product.id },
       include: [
-        { model: Categories, attributes: ['name'] },
+        { model: Categories, as: 'cate', attributes: ['name'] },
         {
           model: Pro_translation,
+          as: 'translations',
           attributes: ['languagecode', 'name', 'description']
         }
       ]
     });
     res.status(201).send(created);
   } catch (error) {
-    await t.rollback();
     res.status(500).send(error);
   }
 };
@@ -164,11 +161,10 @@ const getDetailProducts = async (req, res) => {
 const updateProducts = async (req, res) => {
   const { id } = req.params;
   const { categoriesid, price, brand, quantity, languagecode, name, description } = req.body;
-  const t = await sequelize.transaction();
+
   try {
     const product = await Products.findOne({ where: { id } });
     if (!product) {
-      await t.rollback();
       return res.status(404).send({ message: 'Product not found' });
     }
 
@@ -176,19 +172,17 @@ const updateProducts = async (req, res) => {
     if (price !== undefined) product.price = price;
     if (brand !== undefined) product.brand = brand;
     if (quantity !== undefined) product.quantity = quantity;
-    await product.save({ transaction: t });
+    await product.save();
 
     if (languagecode && (name !== undefined || description !== undefined)) {
       const trans = await Pro_translation.findOne({
         where: { productid: id, languagecode },
-        transaction: t,
-        lock: t.LOCK.UPDATE
       });
 
       if (trans) {
         if (name !== undefined) trans.name = name;
         if (description !== undefined) trans.description = description;
-        await trans.save({ transaction: t });
+        await trans.save();
       } else {
         await Pro_translation.create(
           {
@@ -197,19 +191,17 @@ const updateProducts = async (req, res) => {
             name: name || '',
             description: description || null
           },
-          { transaction: t }
         );
       }
     }
 
-    await t.commit();
 
     const updated = await Products.findOne({
       where: { id },
       include: [
-        { model: Categories, attributes: ['name'] },
+        { model: Categories, as: 'cate', attributes: ['name'] },
         {
-          model: Pro_translation,
+          model: Pro_translation, as: 'translations',
           attributes: ['languagecode', 'name', 'description'],
           where: languagecode ? { languagecode } : undefined,
           required: false
@@ -219,7 +211,7 @@ const updateProducts = async (req, res) => {
 
     res.status(200).send(updated);
   } catch (error) {
-    await t.rollback();
+    
     res.status(500).send(error);
   }
 };
