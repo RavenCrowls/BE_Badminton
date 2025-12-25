@@ -1,5 +1,5 @@
-const { Imagesproduct } = require("../models");
-const cloudinary = require("cloudinary").v2;
+const { ImagesProducts } = require('../models');
+const cloudinary = require('cloudinary').v2;
 
 const createImageProduct = async (req, res) => {
   try {
@@ -7,9 +7,9 @@ const createImageProduct = async (req, res) => {
     const url = req.file.path;
     console.log(req.file);
 
-    const newImageProduct = await Imagesproduct.create({
+    const newImageProduct = await ImagesProducts.create({
       productid,
-      url,
+      url
     });
 
     res.status(201).json(newImageProduct);
@@ -22,23 +22,23 @@ const deleteImageProduct = async (req, res) => {
   try {
     const { id } = req.params;
 
-    const imageProduct = await Imagesproduct.findOne({
-      where: { id },
+    const imageProduct = await ImagesProducts.findOne({
+      where: { id }
     });
 
     if (!imageProduct) {
-      return res.status(404).send({ message: "Image not found" });
+      return res.status(404).send({ message: 'Image not found' });
     }
 
     // Lấy public_id đúng từ url
     // VD: https://res.cloudinary.com/demo/image/upload/v123456789/myfolder/abcxyz.jpg
     const url = imageProduct.url;
-    const uploadIndex = url.indexOf("/upload/");
+    const uploadIndex = url.indexOf('/upload/');
     let publicId = url.substring(uploadIndex + 8); // 8 là độ dài "/upload/"
     // Bỏ version nếu có (v123456789/)
-    publicId = publicId.replace(/^v\d+\//, "");
+    publicId = publicId.replace(/^v\d+\//, '');
     // Bỏ phần mở rộng
-    publicId = publicId.replace(/\.[^/.]+$/, "");
+    publicId = publicId.replace(/\.[^/.]+$/, '');
 
     // Xóa ảnh trên Cloudinary
     await cloudinary.uploader.destroy(publicId);
@@ -46,7 +46,7 @@ const deleteImageProduct = async (req, res) => {
     await imageProduct.destroy();
 
     res.status(200).send({
-      message: "Image deleted successfully",
+      message: 'Image deleted successfully'
     });
   } catch (error) {
     res.status(500).send(error);
